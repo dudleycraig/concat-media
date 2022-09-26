@@ -46,15 +46,7 @@ code {
   padding: 10px;
 }
 
-.layout > .content .video, .layout > .content .canvas {
-  margin: 0;
-  padding: 0;
-  width: 1500px;
-  min-height: 800px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.layout > .content ul.messages {
+.layout > .content > ul.messages {
   display: block;
   margin: 0;
   padding: 0;
@@ -64,8 +56,27 @@ code {
   background: rgba(255, 255, 255, 1);
 }
 
-.layout > .content ul.messages li {
+.layout > .content > ul.messages li {
   margin: 0 20px;
   line-height: 25px;
+}
+
+.layout > .content > .media {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin: 0; padding: 0;
+  width: 90vw; height: 80vh;
+}
+
+.layout > .content > .media > .video,
+.layout > .content > .media > .canvas {
+  margin: 0; padding: 0;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.layout > .content > .media > .canvas {
 }
 

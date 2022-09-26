@@ -14,17 +14,18 @@ const Messages = ({messages, ...props}) => (
 const App = () => {
   const videoRef = useRef();
   const canvasRef = useRef();
+  const mediaRef = useRef();
 
   const [state, setState] = useState({
     context: undefined,
     status: 'inert',
     messages: [],
     canvas: {
-      disabled: true,
-      fps: 60,
-      dimensions: [0, 0, 0, 0],
-      context: undefined,
-      interval: undefined 
+      disabled: false,
+      interval: 1000 / 60,
+      intervalId: undefined,
+      dimensions: [], 
+      context: undefined
     },
     sequence: {
       index: 0,
@@ -37,19 +38,37 @@ const App = () => {
   });
 
   useEffect(() => {
-    setState({
-      ...state, 
-      status: 'loading', 
-      messages: [{success: 'media loading'}, ...state.messages],
-      // canvas: {...state.canvas, context, dimensions: [x, y, width, height]}
-      canvas: (state.canvas.disabled 
-        ? state.canvas 
-        : {
+    if (!state.canvas.disabled) {
+      const {x, y, width, height, ...location} = mediaRef.current.getBoundingClientRect();
+      canvasRef.current.style.width = `${width}px`;
+      canvasRef.current.style.height = `${height}px`;
+
+      const scale = window.devicePixelRatio;
+      canvasRef.current.width = Math.floor(width * scale);
+      canvasRef.current.height = Math.floor(height * scale);
+
+      const context = canvasRef.current.getContext('2d', {alpha: false});
+      context.scale(scale, scale);
+      context.fillStyle = '#000000';
+
+      setState({
+        ...state, 
+        status: 'loading', 
+        messages: [{success: 'media loading'}, ...state.messages],
+        canvas: {
           ...state.canvas, 
-          context: canvasRef.current.getContext('2d', {alpha: false}), 
-          dimensions: videoRef.current.getBoundingClientRect().slice(0, 3)
-        })
-    });
+          dimensions: [0, 0, width, height],
+          context
+        }
+      });
+    }
+    else {
+      setState({
+        ...state, 
+        status: 'loading', 
+        messages: [{success: 'media loading'}, ...state.messages]
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -72,58 +91,36 @@ const App = () => {
         case ('playing'):
           videoRef.current.src = state.sequence.clips[state.sequence.index].blob;
           videoRef.current.play();
-          setState({
-            ...state, 
-            canvas: (
-              state.canvas.disabled 
-                ? state.canvas 
-                : {
-                  ...state.canvas, 
-                  interval: window.setInterval(
-                    () => state.canvas.context.drawImage(
-                      videoRef.current,
-                      ...state.canvas.dimensions 
-                    ),
-                    1000 / state.canvas.fps
-                  )
-                }
-            )
-          });
+          if (!state.canvas.disabled) {
+            setState({
+              ...state, 
+              canvas: {
+                ...state.canvas, 
+                intervalId: window.setInterval(
+                  () => state.canvas.context.drawImage(videoRef.current, ...state.canvas.dimensions),
+                  state.canvas.interval
+                )
+              }
+            });
+          }
           break;
 
         // paused
 
         case ('ended'):
-          if (!state.canvas.disabled) clearInterval(state.canvas.interval);
+          if (!state.canvas.disabled) clearInterval(state.canvas.intervalId);
           switch (state.sequence.clips[state.sequence.index].instruction) {
 
             case ('next'): 
-              setState({
-                ...state, 
-                status: 'playing', 
-                messages: [{success: `media playing next clip ${state.sequence.index}`}, ...state.messages], 
-                sequence: {...state.sequence, index: ++state.sequence.index},
-                canvas: {...state.canvas, interval: undefined}
-              });
+              setState({...state, status: 'playing', messages: [{success: `media playing next clip ${state.sequence.index}`}, ...state.messages], sequence: {...state.sequence, index: ++state.sequence.index}});
               break;
 
             case ('prev'): 
-              setState({
-                ...state, 
-                status: 'playing', 
-                messages: [{success: `media playing prev clip ${state.sequence.index}`}, ...state.messages], 
-                sequence: {...state.sequence, index: --state.sequence.index},
-                canvas: {...state.canvas, interval: undefined}
-              });
+              setState({...state, status: 'playing', messages: [{success: `media playing prev clip ${state.sequence.index}`}, ...state.messages], sequence: {...state.sequence, index: --state.sequence.index}});
               break;
 
             case ('loop'):
-              setState({
-                ...state, 
-                status: 'playing', 
-                messages: [{success: `media playing loop clip ${state.sequence.index}`}, ...state.messages],
-                canvas: {...state.canvas, interval: undefined}
-              });
+              setState({...state, status: 'playing', messages: [{success: `media playing loop clip ${state.sequence.index}`}, ...state.messages]});
               break;
           }
           break;
@@ -137,19 +134,28 @@ const App = () => {
   return (
     <div className="layout">
       <div className="content">
-        <canvas
-          className="canvas"
-          ref={canvasRef}
-          style={{display: (state.canvas.disabled ? 'none' : 'block')}}
-        />
-        <video
-          className="video"
-          ref={videoRef} muted={true} autoPlay={true} playsInline={false} loop={false} // hidden={true}
-          onPlay={() => setState({...state, status: 'playing'})}
-          onPause={() => setState({...state, status: 'paused'})}
-          onEnded={() => setState({...state, status: 'ended', messages: [{success: `media ended clip ${state.sequence.index}`}, ...state.messages]})}
-          onError={(error) => setState({...state, status: 'error', messages: [{error: error.message}, ...state.messages]})}
-        />
+        <div ref={mediaRef} className="media">
+          <canvas
+            className="canvas"
+            style={{display: (state.canvas.disabled ? 'none' : 'block')}}
+            ref={canvasRef}
+          />
+          <video
+            className="video"
+            style={{display: (state.canvas.disabled ? 'block' : 'none')}}
+            ref={videoRef} 
+            muted={true} 
+            autoPlay={true} 
+            playsInline={true} 
+            loop={false} 
+            crossOrigin={'anonymous'} 
+            preload={'auto'}
+            onPlay={() => setState({...state, status: 'playing'})}
+            onPause={() => setState({...state, status: 'paused'})}
+            onEnded={() => setState({...state, status: 'ended', messages: [{success: `media ended clip ${state.sequence.index}`}, ...state.messages]})}
+            onError={(error) => setState({...state, status: 'error', messages: [{error: error.message}, ...state.messages]})}
+          />
+        </div>
         <Messages messages={state.messages} />
       </div>
     </div>
