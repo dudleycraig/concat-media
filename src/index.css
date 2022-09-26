@@ -1,13 +1,71 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+.error {
+  color: red;
+}
+
+.warning {
+  color: orange;
+}
+
+.success {
+  color: green;
+}
+
+.layout {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: white;
+    overflow: hidden;
+    background: black;
+}
+
+.layout > .content {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+
+  padding: 10px;
+}
+
+.layout > .content .video, .layout > .content .canvas {
+  margin: 0;
+  padding: 0;
+  width: 1500px;
+  min-height: 800px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.layout > .content ul.messages {
+  display: block;
+  margin: 0;
+  padding: 0;
+  width: 90vw;
+  height: 75px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 1);
+}
+
+.layout > .content ul.messages li {
+  margin: 0 20px;
+  line-height: 25px;
+}
+
