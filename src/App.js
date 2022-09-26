@@ -1,5 +1,31 @@
 import React, {useEffect, useRef, forwardRef, useState} from 'react';
+import THREE, {Material, MeshBasicMaterial, VideoTexture, Mesh, OrthographicCamera, PlaneGeometry, Scene, Vector4, WebGLRenderer} from 'three';
 import './index.css';
+
+const useAnimationFrame = (handler, duration = Number.POSITIVE_INFINITY, active = true) => {
+  const frame = useRef(0);
+  const firstFrameTime = useRef(performance.now());
+
+  const animate = (now) => {
+    let timeFraction = (now - firstFrameTime.current) / duration;
+    if (timeFraction > 1) timeFraction = 1;
+    if (timeFraction <= 1) {
+      handler();
+      if (timeFraction != 1) frame.current = requestAnimationFrame(animate);
+    }
+  }
+
+  useEffect(() => {
+    if (active) {
+      firstFrameTime.current = performance.now();
+      frame.current = requestAnimationFrame(animate);
+    }
+    else {
+      cancelAnimationFrame(frame.current);
+    }
+    return () => cancelAnimationFrame(frame.current);
+  }, [active]);
+}
 
 const Messages = ({messages, ...props}) => (
   <ul className="messages">
@@ -11,7 +37,7 @@ const Messages = ({messages, ...props}) => (
   </ul>
 );
 
-const App = () => {
+const App = (props) => {
   const videoRef = useRef();
   const canvasRef = useRef();
   const mediaRef = useRef();
@@ -19,66 +45,94 @@ const App = () => {
   const [state, setState] = useState({
     context: undefined,
     status: 'inert',
+    mode: 'webgl', // use either native video element for rendering, canvas renderer, or webgl renderer. ['video', 'canvas', 'webgl']
     messages: [],
     canvas: {
-      disabled: false,
+      context: undefined,
       interval: 1000 / 60,
       intervalId: undefined,
-      dimensions: [], 
-      context: undefined
+      dimensions: []
     },
     sequence: {
       index: 0,
       clips: [
-        {instruction: 'next', url: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing0_1920x1080.mp4'},
-        {instruction: 'loop', url: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing1_1920x1080.mp4'},
-        {instruction: 'next', url: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing2_1920x1080.mp4'}
+        {transition: 'next', file: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing0_1920x1080.mp4'},
+        {transition: 'loop', file: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing1_1920x1080.mp4'},
+        {transition: 'next', file: 'https://cdn.cryptoys.dev/public/unboxing/zoofo/unboxing2_1920x1080.mp4'}
       ]
     },
   });
 
-  useEffect(() => {
-    if (!state.canvas.disabled) {
-      const {x, y, width, height, ...location} = mediaRef.current.getBoundingClientRect();
-      canvasRef.current.style.width = `${width}px`;
-      canvasRef.current.style.height = `${height}px`;
+  const initCanvas = () => {
+    const scale = window.devicePixelRatio;
+    const context = canvasRef.current.getContext('2d', {alpha: true});
+    context.scale(scale, scale);
+    context.fillStyle = '#000000';
+    return context;
+  }
 
-      const scale = window.devicePixelRatio;
-      canvasRef.current.width = Math.floor(width * scale);
-      canvasRef.current.height = Math.floor(height * scale);
+  const initWebGL = () => {
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, -1, 1);
+    const texture = new VideoTexture(videoRef.current);
+    const geometry = new PlaneGeometry(2, 2);
+    const material = new MeshBasicMaterial();
+    material.map = texture;
 
-      const context = canvasRef.current.getContext('2d', {alpha: false});
-      context.scale(scale, scale);
-      context.fillStyle = '#000000';
+    const plane = new Mesh(geometry, material);
+    scene.add(plane);
 
-      setState({
-        ...state, 
-        status: 'loading', 
-        messages: [{success: 'media loading'}, ...state.messages],
-        canvas: {
-          ...state.canvas, 
-          dimensions: [0, 0, width, height],
-          context
-        }
-      });
-    }
-    else {
-      setState({
-        ...state, 
-        status: 'loading', 
-        messages: [{success: 'media loading'}, ...state.messages]
-      });
-    }
-  }, []);
+    const context = new WebGLRenderer({canvas: canvasRef.current, alpha: true});
+    context.autoClearColor = true;
+    context.setClearColor(0x000000, 0);
+    context.setPixelRatio(devicePixelRatio);
+
+    useAnimationFrame({
+      handler: () => context.render(scene, camera),
+      active: true,
+      duration: 1000
+    });
+
+    return context;
+  }
+
+  useEffect(() => setState({...state, status: 'init'}), []);
 
   useEffect(() => {
     if (videoRef.current) {
       switch (state.status) {
 
+        case ('init'):
+          const {x, y, width, height, ...location} = mediaRef.current.getBoundingClientRect();
+          videoRef.current.style.width = `${width}px`;
+          videoRef.current.style.height = `${height}px`;
+          canvasRef.current.style.width = `${width}px`;
+          canvasRef.current.style.height = `${height}px`;
+
+          const scale = window.devicePixelRatio;
+          canvasRef.current.width = Math.floor(width * scale);
+          canvasRef.current.height = Math.floor(height * scale);
+
+          setState({
+            ...state, 
+            status: 'loading', 
+            messages: [{success: 'media loading'}, ...state.messages],
+            canvas: {
+              ...state.canvas, 
+              dimensions: [0, 0, width, height], 
+              context: state.mode === 'webgl' 
+                ? initWebGL() 
+                : (state.mode === 'canvas' 
+                  ? initCanvas() 
+                  : undefined)
+            }
+          });
+          break;
+
         case ('loading'):
           Promise.all(
             state.sequence.clips
-              .map(entry => fetch(entry.url)
+              .map(clip => fetch(clip.file)
                 .then(response => response.blob().then(blob => URL.createObjectURL(blob)))))
             .then(blobs => setState({...state, status: 'loaded', messages: [{success: 'media loaded'}, ...state.messages], sequence: {...state.sequence, clips: blobs.reduce((clips, blob, index) => [...clips, {...state.sequence.clips[index], blob}], [])}}))
             .catch(error => setState({...state, status: 'error', messages: [{error: error.message}, ...state.messages]}));
@@ -91,7 +145,8 @@ const App = () => {
         case ('playing'):
           videoRef.current.src = state.sequence.clips[state.sequence.index].blob;
           videoRef.current.play();
-          if (!state.canvas.disabled) {
+
+          if (state.mode === 'canvas') {
             setState({
               ...state, 
               canvas: {
@@ -105,22 +160,34 @@ const App = () => {
           }
           break;
 
-        // paused
-
         case ('ended'):
-          if (!state.canvas.disabled) clearInterval(state.canvas.intervalId);
-          switch (state.sequence.clips[state.sequence.index].instruction) {
+          if (state.mode === 'canvas') clearInterval(state.canvas.intervalId);
+          switch (state.sequence.clips[state.sequence.index].transition) {
 
             case ('next'): 
-              setState({...state, status: 'playing', messages: [{success: `media playing next clip ${state.sequence.index}`}, ...state.messages], sequence: {...state.sequence, index: ++state.sequence.index}});
+              setState({
+                ...state, 
+                status: 'playing', 
+                messages: [{success: `media playing next clip ${state.sequence.index}`}, ...state.messages], 
+                sequence: {...state.sequence, index: ++state.sequence.index}
+              });
               break;
 
             case ('prev'): 
-              setState({...state, status: 'playing', messages: [{success: `media playing prev clip ${state.sequence.index}`}, ...state.messages], sequence: {...state.sequence, index: --state.sequence.index}});
+              setState({
+                ...state, 
+                status: 'playing', 
+                messages: [{success: `media playing prev clip ${state.sequence.index}`}, ...state.messages], 
+                sequence: {...state.sequence, index: --state.sequence.index}
+              });
               break;
 
             case ('loop'):
-              setState({...state, status: 'playing', messages: [{success: `media playing loop clip ${state.sequence.index}`}, ...state.messages]});
+              setState({
+                ...state, 
+                status: 'playing', 
+                messages: [{success: `media playing loop clip ${state.sequence.index}`}, ...state.messages]
+              });
               break;
           }
           break;
@@ -137,19 +204,17 @@ const App = () => {
         <div ref={mediaRef} className="media">
           <canvas
             className="canvas"
-            style={{display: (state.canvas.disabled ? 'none' : 'block')}}
+            style={{display: (state.mode !== 'video' ? 'block' : 'none')}}
             ref={canvasRef}
           />
           <video
             className="video"
-            style={{display: (state.canvas.disabled ? 'block' : 'none')}}
+            style={{display: (state.mode === 'video' ? 'block' : 'none')}}
             ref={videoRef} 
             muted={true} 
-            autoPlay={true} 
+            autoPlay={false} 
             playsInline={true} 
             loop={false} 
-            crossOrigin={'anonymous'} 
-            preload={'auto'}
             onPlay={() => setState({...state, status: 'playing'})}
             onPause={() => setState({...state, status: 'paused'})}
             onEnded={() => setState({...state, status: 'ended', messages: [{success: `media ended clip ${state.sequence.index}`}, ...state.messages]})}

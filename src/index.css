@@ -74,7 +74,7 @@ code {
 .layout > .content > .media > .video,
 .layout > .content > .media > .canvas {
   margin: 0; padding: 0;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .layout > .content > .media > .canvas {
