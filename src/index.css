@@ -35,14 +35,12 @@ code {
 
 .layout > .content {
   flex: 1;
-
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 20px;
-
   padding: 10px;
 }
 
@@ -79,4 +77,3 @@ code {
 
 .layout > .content > .media > .canvas {
 }
-
