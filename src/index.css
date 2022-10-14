@@ -76,4 +76,5 @@ code {
 }
 
 .layout > .content > .media > .canvas {
+  background: rgba(60, 60, 60, 0.1);
 }
