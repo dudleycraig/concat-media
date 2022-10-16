@@ -1,6 +1,6 @@
-import React, {setState, forwardRef} from 'react';
+import React, {forwardRef} from 'react';
 
-export default forwardRef(({setState, active, ...props}, ref) =>  
+const Video = forwardRef(({setState, active, ...props}, ref) =>  
   <video 
     className="video" style={{display: active ? 'block' : 'none'}} ref={ref}
     muted={true} autoPlay={false} playsInline={true} loop={false} preload={'metadata'}
@@ -13,20 +13,22 @@ export default forwardRef(({setState, active, ...props}, ref) =>
     onLoadedData={event => null}
     onLoadedMetadata={event => setState(state => ({
       ...state, 
-      status:'loaded-next-clip', 
+      status:'loaded-next-transition', 
       sequence:{
         ...state.sequence, 
-        clips:[
-          ...(state.sequence.index > 0 ? state.sequence.clips.slice(0, state.sequence.index) : []), 
-          {...state.sequence.clips[state.sequence.index], duration:event.target.duration * 1000}, 
-          ...state.sequence.clips.slice(state.sequence.index + 1)
+        transitions:[
+          ...(state.sequence.index > 0 ? state.sequence.transitions.slice(0, state.sequence.index) : []), 
+          {...state.sequence.transitions[state.sequence.index], duration:event.target.duration * 1000}, 
+          ...state.sequence.transitions.slice(state.sequence.index + 1)
         ]
       }
     }))}
     onRateChange={event => null}
     onSuspend={event => null}
-    onEnded={event => setState(state => ({...state, status:'ended-clips'}))}
-    // onTimeUpdate={event => setState(state => (state.status !== 'load-next-clip' && event.target.duration - event.target.currentTime < 0.3 && {...state, status:'next'}))}
+    onEnded={event => setState(state => ({...state, status:'ended-transitions'}))}
+    // onTimeUpdate={event => setState(state => (state.status !== 'load-next-transition' && event.target.duration - event.target.currentTime < 0.3 && {...state, status:'next'}))}
     onError={error => setState(state => ({status:'error', messages:[{error:error.message}]}))}
   />
 );
+
+export default Video;

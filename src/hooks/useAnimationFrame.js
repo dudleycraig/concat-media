@@ -1,6 +1,6 @@
-import React, {useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 
-export default callback => {
+const useAnimationFrame = callback => {
   const startedRef = useRef(Date.now());
   const currentRef = useRef(Date.now());
   const frameRef = useRef();
@@ -18,3 +18,5 @@ export default callback => {
     return () => cancelAnimationFrame(frameRef.current);
   }, []);
 };
+
+export default useAnimationFrame;
