@@ -11,16 +11,20 @@ const App = props => {
   }
 
   return (
-    <Sequencer>
-      <Transition key={'intro'} type={'next'} source={sources[SOURCE][0]} />
-      <Transition key={'wait-unboxing'} type={'current'} source={sources[SOURCE][1]}>
-        <button type="button" onClick={() => console.log('click handler')}>waiting ...</button>
-      </Transition>
-      <Transition key={'wait-loading-unwrapping'} type={'current'} source={sources[SOURCE][1]}>
-        {/** TODO: add loader animation component **/}
-      </Transition>
-      <Transition key={'transition-into-unwrapping'} type={'next'} source={sources[SOURCE][2]} />
-    </Sequencer>
+    <div className="layout">
+      <div className="content">
+        <Sequencer>
+          <Transition key={'intro'} type={'next'} source={sources[SOURCE][0]} />
+          <Transition key={'wait-unboxing'} type={'current'} source={sources[SOURCE][1]}>
+            <button type="button" onClick={() => console.log('click handler')}>waiting ...</button>
+          </Transition>
+          <Transition key={'wait-loading-unwrapping'} type={'current'} source={sources[SOURCE][1]}>
+            {/** TODO: add loader animation component **/}
+          </Transition>
+          <Transition key={'transition-into-unwrapping'} type={'next'} source={sources[SOURCE][2]} />
+        </Sequencer>
+      </div>
+    </div>
   );
 }
 

@@ -1,34 +1,35 @@
-import React, {useEffect, useRef, forwardRef} from 'react';
-import {MeshBasicMaterial, VideoTexture, Mesh, OrthographicCamera, PlaneGeometry, Scene, WebGLRenderer} from 'three';
+import React, {useEffect, forwardRef} from 'react';
+import {OrthographicCamera, Scene, WebGLRenderer} from 'three';
+import {MeshBasicMaterial, VideoTexture, Mesh, PlaneGeometry} from 'three';
 
-const Renderer = forwardRef(({width, height, video, setContext}, ref) => {
+const Renderer = forwardRef(({dimensions, video, setContext}, ref) => {
   useEffect(() => {
     if (ref.current) {
-      const scale = window.devicePixelRatio;
-      ref.current.width = Math.floor(width * scale);
-      ref.current.height = Math.floor(height * scale);
-
-      const scene = new Scene();
-      const camera = new OrthographicCamera(-1, 1, 1, -1, -1, 1);
-      const geometry = new PlaneGeometry(2, 2);
-
-      const texture = new VideoTexture(video.current);
-      const material = new MeshBasicMaterial();
-      material.map = texture;
-
-      const plane = new Mesh(geometry, material);
-      scene.add(plane);
-
       const renderer = new WebGLRenderer({canvas:ref.current, alpha:true});
       renderer.autoClearColor = true;
       renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(devicePixelRatio);
 
+      const scale = window.devicePixelRatio; // generally 1
+      // TODO: calculate aspect ratio and apply to canvas
+
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, -1, 1);
+
+      const texture = new VideoTexture(video.current);
+      const material = new MeshBasicMaterial();
+      material.map = texture;
+
+      const geometry = new PlaneGeometry(2, 2);
+      const plane = new Mesh(geometry, material);
+      plane.name = 'video';
+      scene.add(plane);
+
       setContext({renderer, scene, camera});
     }
-  }, [width, height, video]);
+  }, [video]);
 
-  return (<canvas ref={ref} className={'canvas'} />);
+  return (<canvas ref={ref} className={'renderer'} width={`${dimensions.width}px`} height={`${dimensions.height}px`} />);
 });
 
 export default Renderer;

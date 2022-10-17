@@ -1,13 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
+import useWindowDimensions from '../hooks/useWindowDimensions';
 import useAnimationFrame from '../hooks/useAnimationFrame';
-import Messages from './Messages';
 import Video from './Video';
 import Renderer from './Renderer';
 
 const Sequencer = ({children}) => {
+  const [state, setState] = useState({status:'idle', sequence:{active:0, transitions:[]}, context:undefined, messages:[]});
   const DEBUG = true;
-  const [dimensions, setDimensions] = useState({width:undefined, height:undefined});
-  const [state, setState] = useState({status:'idle', sequence:{active:0, transitions:[]}, renderer:undefined, messages:[]});
+  const dimensions = useWindowDimensions();
   const mediaRef = useRef();
   const rendererRef = useRef();
   const videoRef = useRef();
@@ -32,7 +32,7 @@ const Sequencer = ({children}) => {
         };
 
       // fetch ALL current transitions
-      case ('requesting-transitions'): 
+      case ('requesting-transitions'):
         Promise.all(
           state.sequence.transitions // TODO: filter on source so only unique sources are requested
             .map(transition => fetch(transition.source)
@@ -75,7 +75,7 @@ const Sequencer = ({children}) => {
           sequence:{
             ...state.sequence, 
             active:{next:state.sequence.active + 1, current:state.sequence.active, prev:state.sequence.active - 1}[state.sequence.transitions[state.sequence.active].type], 
-            transitions:[
+            transitions:[ // immutably update currently active transition (we could do state.sequence[state.sequence.active] = {...}, but don't want side effects during animation loop)
               ...(state.sequence.active > 0 ? state.sequence.transitions.slice(0, state.sequence.active) : []), 
               {...state.sequence.transitions[state.sequence.active], started:0}, 
               ...(state.sequence.transitions.length > (state.sequence.active + 1) ? state.sequence.transitions.slice(state.sequence.active + 1) : [])
@@ -110,7 +110,7 @@ const Sequencer = ({children}) => {
           status:'playing-transition', 
           sequence:{
             ...state.sequence, 
-            transitions:[ // immutably update currently active transition (we don't want side effects during animation loop)
+            transitions:[ // immutably update currently active transition (we could do state.sequence[state.sequence.active] = {...}, but don't want side effects during animation loop)
               ...(state.sequence.active > 0 ? state.sequence.transitions.slice(0, state.sequence.active) : []), 
               {...state.sequence.transitions[state.sequence.active], started:Date.now()}, 
               ...(state.sequence.transitions.length > (state.sequence.active + 1) ? state.sequence.transitions.slice(state.sequence.active + 1) : [])
@@ -153,25 +153,20 @@ const Sequencer = ({children}) => {
   }
 
   useEffect(() => {
-    const {width, height} = mediaRef.current.getBoundingClientRect();
-    setDimensions({width:`${width}px`, height:`${height}px`});
     setState(state => ({...state, status:'init'}));
   }, []);
 
   useAnimationFrame(time => {
-    setState(state => reducer(state, time));
-    state.context?.renderer?.render(state.context.scene, state.context.camera);
+    if (state.context && state.context.renderer && state.context.renderer) {
+      setState(state => reducer(state, time));
+      state.context.renderer.render(state.context.scene, state.context.camera);
+    }
   });
 
   return (
-    <div className="layout">
-      <div className="content">
-        <div ref={mediaRef} className="media">
-          <Video ref={videoRef} setState={setState} active={false} />
-          <Renderer ref={rendererRef} width={dimensions.width} height={dimensions.height} video={videoRef} setContext={context => setState(state => ({...state, context}))} />
-        </div>
-        <Messages messages={state.messages} render={false} />
-      </div>
+    <div ref={mediaRef} className="sequencer">
+      <Video ref={videoRef} setState={setState} active={false} />
+      <Renderer ref={rendererRef} dimensions={dimensions} video={videoRef} setContext={context => setState(state => ({...state, context}))} />
     </div>
   );
 }

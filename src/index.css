@@ -27,6 +27,7 @@ code {
     flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
+    width: 100%;
     height: 100%;
     color: white;
     overflow: hidden;
@@ -40,8 +41,28 @@ code {
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 20px;
   padding: 10px;
+}
+
+.layout > .content > .sequencer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+}
+
+.layout > .content > .sequencer > .video,
+.layout > .content > .sequencer > .renderer {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.layout > .content > .sequencer > .renderer {
+  background-color: rgba(60, 60, 60, 0.1);
 }
 
 .layout > .content > ul.messages {
@@ -59,22 +80,3 @@ code {
   line-height: 25px;
 }
 
-.layout > .content > .media {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  margin: 0; padding: 0;
-  width: 90vw; height: 80vh;
-}
-
-.layout > .content > .media > .video,
-.layout > .content > .media > .canvas {
-  margin: 0; padding: 0;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.layout > .content > .media > .canvas {
-  background: rgba(60, 60, 60, 0.1);
-}
