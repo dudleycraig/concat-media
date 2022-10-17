@@ -16,10 +16,10 @@ const Video = forwardRef(({setState, active, ...props}, ref) =>
       status:'loaded-next-transition', 
       sequence:{
         ...state.sequence, 
-        transitions:[
-          ...(state.sequence.index > 0 ? state.sequence.transitions.slice(0, state.sequence.index) : []), 
-          {...state.sequence.transitions[state.sequence.index], duration:event.target.duration * 1000}, 
-          ...state.sequence.transitions.slice(state.sequence.index + 1)
+        transitions:[ // immutably update currently active transition (we don't want side effects during animation loop)
+          ...(state.sequence.active > 0 ? state.sequence.transitions.slice(0, state.sequence.active) : []), 
+          {...state.sequence.transitions[state.sequence.active], duration:event.target.duration * 1000}, 
+          ...state.sequence.transitions.slice(state.sequence.active + 1)
         ]
       }
     }))}

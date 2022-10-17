@@ -1,8 +1,7 @@
 import React, {useEffect, useRef, forwardRef} from 'react';
 import {MeshBasicMaterial, VideoTexture, Mesh, OrthographicCamera, PlaneGeometry, Scene, WebGLRenderer} from 'three';
 
-const Renderer = forwardRef(({width, height, video}, ref) => {
-
+const Renderer = forwardRef(({width, height, video, setContext}, ref) => {
   useEffect(() => {
     if (ref.current) {
       const scale = window.devicePixelRatio;
@@ -20,13 +19,12 @@ const Renderer = forwardRef(({width, height, video}, ref) => {
       const plane = new Mesh(geometry, material);
       scene.add(plane);
 
-      const context = new WebGLRenderer({canvas:ref.current, alpha:true});
-      context.autoClearColor = true;
-      context.setClearColor(0x000000, 0);
-      context.setPixelRatio(devicePixelRatio);
+      const renderer = new WebGLRenderer({canvas:ref.current, alpha:true});
+      renderer.autoClearColor = true;
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(devicePixelRatio);
 
-      // TODO: move to animation loop
-      context.render(scene, camera);
+      setContext({renderer, scene, camera});
     }
   }, [width, height, video]);
 

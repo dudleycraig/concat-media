@@ -12,11 +12,14 @@ const App = props => {
 
   return (
     <Sequencer>
-      <Transition uuid={'init'} type={'next'} source={sources[SOURCE][0]} />
-      <Transition uuid={'loop'} type={'current'} source={sources[SOURCE][1]}>
+      <Transition key={'intro'} type={'next'} source={sources[SOURCE][0]} />
+      <Transition key={'wait-unboxing'} type={'current'} source={sources[SOURCE][1]}>
         <button type="button" onClick={() => console.log('click handler')}>waiting ...</button>
       </Transition>
-      <Transition uuid={'end'} type={'next'} source={sources[SOURCE][2]} />
+      <Transition key={'wait-loading-unwrapping'} type={'current'} source={sources[SOURCE][1]}>
+        {/** TODO: add loader animation component **/}
+      </Transition>
+      <Transition key={'transition-into-unwrapping'} type={'next'} source={sources[SOURCE][2]} />
     </Sequencer>
   );
 }
